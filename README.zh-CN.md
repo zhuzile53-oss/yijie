@@ -8,6 +8,10 @@
 一个给「跨语言阅读」用的 Chrome / Edge 扩展（Manifest V3）。
 它不只是翻译：先给译文，再讲术语、拆句子、说清言外之意。
 
+| 英文页面 → 中文讲解 | 中文页面 → 英文讲解 |
+|---|---|
+| ![英文页面，右侧中文讲解面板](docs/screenshots/panel-en.png) | ![中文页面，右侧英文讲解面板](docs/screenshots/panel-zh.png) |
+
 ## 功能
 
 - **任意网站可用** — 一个 content script，匹配 `http(s)://*/*`，只排除自带划词菜单的少数站点
@@ -30,6 +34,8 @@
 > 应用商店上架中。在那之前只能这样安装。
 
 ## 配置
+
+<img src="docs/screenshots/settings.png" width="620" alt="设置页">
 
 | 字段 | 说明 |
 |---|---|
@@ -99,6 +105,9 @@ macOS 上可 `launchctl setenv OLLAMA_ORIGINS "chrome-extension://*"`。
 ```bash
 node test/background.test.mjs   # 流式解析、错误映射、重试
 node test/lang.test.mjs         # 中英文判断
+
+./scripts/check.sh              # 语法 + 测试 + manifest + 隐私红线 + 文档链接
+./scripts/build.sh              # 产出 dist/yijie-<版本>.zip，可直接传商店
 ```
 
 目录：
@@ -112,6 +121,8 @@ src/background.js    # 接口调用、SSE 解析
 src/options.*        # 设置页
 src/panel.css        # 面板样式
 icons/               # 16 / 48 / 128
+scripts/             # check.sh、build.sh
+docs/screenshots/    # README 用图
 test/                # Node 单元测试，不需要浏览器
 ```
 

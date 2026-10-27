@@ -9,6 +9,10 @@ A Chrome / Edge extension (Manifest V3) for people who read across languages.
 It is a reading assistant, not just a translator: you get a translation first,
 then terms, sentence structure and the intent behind the passage.
 
+| English page → Chinese | Chinese page → English |
+|---|---|
+| ![English page with a Chinese explanation panel](docs/screenshots/panel-en.png) | ![Chinese page with an English explanation panel](docs/screenshots/panel-zh.png) |
+
 ## Features
 
 - **Works on any site** — one content script, `http(s)://*/*`, with a small
@@ -38,6 +42,8 @@ then terms, sentence structure and the intent behind the passage.
 > only way to install.
 
 ## Configure
+
+<img src="docs/screenshots/settings.png" width="620" alt="Settings page">
 
 | Field | Notes |
 |---|---|
@@ -119,6 +125,9 @@ script.
 ```bash
 node test/background.test.mjs   # streaming parser, error mapping, retries
 node test/lang.test.mjs         # Chinese / English detection
+
+./scripts/check.sh              # the above + manifest, privacy scan, doc links
+./scripts/build.sh              # dist/yijie-<version>.zip, ready for the store
 ```
 
 Layout:
@@ -132,6 +141,8 @@ src/background.js    # API calls, SSE parsing
 src/options.*        # settings page
 src/panel.css        # panel styles
 icons/               # 16 / 48 / 128
+scripts/             # check.sh, build.sh
+docs/screenshots/    # README images
 test/                # node unit tests, no browser needed
 ```
 
