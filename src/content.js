@@ -122,6 +122,12 @@
     if (btn) { btn.remove(); btn = null; }
   }
 
+  function closePanel() {
+    if (port) { try { port.disconnect(); } catch (e) {} port = null; }
+    if (panel) panel.style.display = "none";
+    removeButton();
+  }
+
   function selectionRect() {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return null;
@@ -196,10 +202,7 @@
           <button class="yj-disable" title="在本站不再弹出，可在设置页恢复">本站禁用</button>
         </span>
       </div>`;
-    panel.querySelector(".yj-close").addEventListener("click", () => {
-      if (port) { try { port.disconnect(); } catch (e) {} port = null; }
-      panel.style.display = "none";
-    });
+    panel.querySelector(".yj-close").addEventListener("click", closePanel);
     panel.querySelector(".yj-mode").addEventListener("click", () => {
       detailed = !detailed;
       const b = panel.querySelector(".yj-mode");
@@ -336,6 +339,11 @@
   });
 
   document.addEventListener("keydown", (e) => {
+    // Esc 关闭面板（面板打开时才拦，避免抢网站的快捷键）
+    if (e.key === "Escape" && panel && panel.style.display === "flex") {
+      closePanel();
+      return;
+    }
     if (siteDisabled) return;
     if (e.altKey && (e.key === "e" || e.key === "E")) {
       const sel = window.getSelection();
