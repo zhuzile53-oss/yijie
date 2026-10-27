@@ -213,15 +213,53 @@ chrome.runtime.onConnect.addListener((port) => {
         return;
       }
 
-      const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+      // 不看 content-type，一律按流解析。
+      // 很多「OpenAI 兼容」服务把流标成 text/plain 甚至不标，按 header 判断会把它
+      // 当成整包 JSON 用 res.text() 等到底，结果就是"不逐字"+"长时间出不来"。
+      if (!res.body) {
+        safePost(port, { type: "error", text: "接口没有返回内容，检查模型名是否正确。" });
+        return;
+      }
 
-      // 有些「OpenAI 兼容」服务无视 stream:true，直接回一个完整 JSON。
-      // 不处理的话，页面会转完圈圈却一个字都没有。
-      if (!contentType.includes("event-stream")) {
-        const text = await res.text();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let raw = "";
+      let deltas = 0;
+      const sse = createSseReader((p) => {
+        deltas++;
+        safePost(port, { type: "delta", text: p });
+        bumpIdle();
+      });
+
+      while (!sse.stopped) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        if (raw.length < 200000) raw += text;
+        sse.feed(text, false);
+      }
+      if (!sse.stopped) {
+        const tail = decoder.decode();
+        if (raw.length < 200000) raw += tail;
+        sse.feed(tail, true);
+      }
+      stopIdle();
+
+      if (sse.stopped) {
+        try {
+          await reader.cancel();
+        } catch (e) {}
+      }
+      if (sse.error) {
+        safePost(port, { type: "error", text: sse.error });
+        return;
+      }
+
+      // 整条流里一个 data: 行都没有，说明对方无视了 stream:true，回的是整包 JSON
+      if (deltas === 0) {
         let filled = false;
         try {
-          const j = JSON.parse(text);
+          const j = JSON.parse(raw);
           if (j && j.error) {
             safePost(port, { type: "error", text: j.error.message || "接口返回错误" });
             return;
@@ -234,46 +272,13 @@ chrome.runtime.onConnect.addListener((port) => {
           }
         } catch (e) {}
         if (!filled) {
-          // content-type 标错但内容其实是 SSE 的情况也不少，按 SSE 再兜一次
-          const probe = createSseReader((p) => safePost(port, { type: "delta", text: p }));
-          probe.feed(text, true);
-          if (probe.error) {
-            safePost(port, { type: "error", text: probe.error });
-            return;
-          }
+          const ct = String(res.headers.get("content-type") || "无");
+          safePost(port, {
+            type: "error",
+            text: "接口没有返回可用内容（content-type: " + ct + "）。检查模型名，或确认该地址是 OpenAI 兼容的 /v1/chat/completions。"
+          });
+          return;
         }
-        safePost(port, { type: "done" });
-        return;
-      }
-
-      if (!res.body) {
-        safePost(port, { type: "error", text: "接口没有返回内容，检查模型名是否正确。" });
-        return;
-      }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      const sse = createSseReader((p) => {
-        safePost(port, { type: "delta", text: p });
-        bumpIdle();
-      });
-
-      while (!sse.stopped) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        sse.feed(decoder.decode(value, { stream: true }), false);
-      }
-      if (!sse.stopped) sse.feed(decoder.decode(), true);
-      stopIdle();
-
-      if (sse.stopped) {
-        try {
-          await reader.cancel();
-        } catch (e) {}
-      }
-      if (sse.error) {
-        safePost(port, { type: "error", text: sse.error });
-        return;
       }
       safePost(port, { type: "done" });
     } catch (e) {
