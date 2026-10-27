@@ -11,6 +11,65 @@
   let detailPromptZh = String(D.detailPromptZh || "").trim() || "Explain this Chinese text in detail in English.";
   let outputLang = D.outputLang || "auto";
 
+  // 面板界面的文案：中文原文出英文答案时，按钮也跟着变英文
+  const STR = {
+    zh: {
+      explain: "解释", detail: "详解", brief: "简明",
+      copy: "复制", copyTip: "复制解释", settings: "设置", close: "关闭",
+      switchMode: "切换简明/详解",
+      regen: "重新生成", regenTip: "用当前设置重新生成",
+      disable: "本站禁用", disableTip: "在本站不再弹出，可在设置页恢复",
+      ready: "就绪", generating: "生成中…", error: "出错", timeout: "超时",
+      notConfigured: "未配置", copied: "已复制", disconnected: "连接断开，请刷新页面",
+      generatingN: (n) => "生成中… " + n + " 字",
+      doneN: (n) => "完成 · " + n + " 字",
+      disabledOn: (h) => "已禁用本站：" + h,
+      slow: "⚠️ 10 秒没有返回。打开 chrome://extensions → 该扩展 → 服务工作进程，看红色报错。",
+      guideTitle: "还没有配置 API Key",
+      guideBody1: "译解 用你自己的 Key 调用模型，请求从浏览器直接发往你填的接口，不经过任何第三方服务器。",
+      guideBody2: "推荐 DeepSeek（platform.deepseek.com 申请，几块钱能用很久）；也支持 OpenAI 和本地 Ollama。",
+      openSettings: "打开设置", retry: "重试"
+    },
+    en: {
+      explain: "Explain", detail: "Detailed", brief: "Brief",
+      copy: "Copy", copyTip: "Copy the explanation", settings: "Settings", close: "Close",
+      switchMode: "Switch between brief and detailed",
+      regen: "Regenerate", regenTip: "Generate again with current settings",
+      disable: "Disable here", disableTip: "Stop showing on this site; re-enable in settings",
+      ready: "Ready", generating: "Generating…", error: "Error", timeout: "Timed out",
+      notConfigured: "Not configured", copied: "Copied", disconnected: "Connection lost — reload the page",
+      generatingN: (n) => "Generating… " + n + " chars",
+      doneN: (n) => "Done · " + n + " chars",
+      disabledOn: (h) => "Disabled on " + h,
+      slow: "⚠️ No response in 10s. Open chrome://extensions → this extension → service worker and check the console.",
+      guideTitle: "No API key yet",
+      guideBody1: "译解 calls the model with your own key straight from your browser — no third-party server in between.",
+      guideBody2: "DeepSeek is the cheapest start (platform.deepseek.com); OpenAI and local Ollama work too.",
+      openSettings: "Open settings", retry: "Retry"
+    }
+  };
+
+  let cur = STR.zh;
+
+  function applyLang(p) {
+    const t = cur;
+    const mode = p.querySelector(".yj-mode");
+    mode.textContent = detailed ? t.brief : t.detail;
+    mode.title = t.switchMode;
+    const copy = p.querySelector(".yj-copy");
+    copy.textContent = t.copy;
+    copy.title = t.copyTip;
+    p.querySelector(".yj-settings").title = t.settings;
+    p.querySelector(".yj-close").title = t.close;
+    p.querySelector(".yj-status").textContent = t.ready;
+    const regen = p.querySelector(".yj-regen");
+    regen.textContent = t.regen;
+    regen.title = t.regenTip;
+    const dis = p.querySelector(".yj-disable");
+    dis.textContent = t.disable;
+    dis.title = t.disableTip;
+  }
+
   // 中文原文 → 英文讲解；其他 → 中文讲解。outputLang 设成 zh 时一律中文。
   function toEnglish(text) {
     return outputLang !== "zh" && LANG.looksChinese(text);
@@ -39,7 +98,7 @@
     chrome.storage.local.set({ disabledSites });
     applySites(disabledSites);
     if (panel) {
-      panel.querySelector(".yj-status").textContent = "已禁用本站：" + HOST;
+      panel.querySelector(".yj-status").textContent = cur.disabledOn(HOST);
       setTimeout(() => { if (panel) panel.style.display = "none"; }, 1500);
     }
   }
@@ -163,7 +222,7 @@
     btn = document.createElement("button");
     btn.className = "yj-fab";
     // 按钮语言跟着输出语言走，用户一眼就知道会得到什么
-    btn.textContent = toEnglish(selText) ? "Explain" : "解释";
+    btn.textContent = toEnglish(selText) ? STR.en.explain : STR.zh.explain;
     btn.style.position = "fixed";
     btn.style.left = "16px";
     btn.style.right = "auto";
@@ -188,31 +247,30 @@
       <div class="yj-head">
         <span class="yj-title">译解</span>
         <span class="yj-actions">
-          <button class="yj-mode" title="切换简明/详解">详解</button>
-          <button class="yj-copy" title="复制解释">复制</button>
-          <button class="yj-settings" title="设置">⚙</button>
-          <button class="yj-close" title="关闭">×</button>
+          <button class="yj-mode"></button>
+          <button class="yj-copy"></button>
+          <button class="yj-settings">⚙</button>
+          <button class="yj-close">×</button>
         </span>
       </div>
       <div class="yj-body"><div class="yj-answer"></div></div>
       <div class="yj-foot">
-        <span class="yj-status">就绪</span>
+        <span class="yj-status"></span>
         <span class="yj-foot-actions">
-          <button class="yj-regen" title="用当前设置重新生成">重新生成</button>
-          <button class="yj-disable" title="在本站不再弹出，可在设置页恢复">本站禁用</button>
+          <button class="yj-regen"></button>
+          <button class="yj-disable"></button>
         </span>
       </div>`;
     panel.querySelector(".yj-close").addEventListener("click", closePanel);
     panel.querySelector(".yj-mode").addEventListener("click", () => {
       detailed = !detailed;
       const b = panel.querySelector(".yj-mode");
-      b.textContent = detailed ? "简明" : "详解";
       b.style.color = detailed ? "#1f3864" : "#888";
       if (currentText) explain(currentText, currentCtx);
     });
     panel.querySelector(".yj-copy").addEventListener("click", () => {
       navigator.clipboard.writeText(buffer).catch(() => {});
-      panel.querySelector(".yj-status").textContent = "已复制";
+      panel.querySelector(".yj-status").textContent = cur.copied;
     });
     panel.querySelector(".yj-settings").addEventListener("click", () => {
       try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
@@ -222,6 +280,7 @@
       if (currentText) explain(currentText, currentCtx);
     });
     document.documentElement.appendChild(panel);
+    applyLang(panel);
     return panel;
   }
 
@@ -235,25 +294,25 @@
 
     const title = document.createElement("p");
     title.className = "yj-guide-title";
-    title.textContent = "还没有配置 API Key";
+    title.textContent = cur.guideTitle;
 
     const p1 = document.createElement("p");
-    p1.textContent = "译解 用你自己的 Key 调用模型，请求从浏览器直接发往你填的接口，不经过任何第三方服务器。";
+    p1.textContent = cur.guideBody1;
 
     const p2 = document.createElement("p");
-    p2.textContent = "推荐 DeepSeek（platform.deepseek.com 申请，几块钱能用很久）；也支持 OpenAI 和本地 Ollama。";
+    p2.textContent = cur.guideBody2;
 
     const row = document.createElement("div");
     row.className = "yj-guide-row";
 
     const open = document.createElement("button");
-    open.textContent = "打开设置";
+    open.textContent = cur.openSettings;
     open.addEventListener("click", () => {
       try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
     });
 
     const retry = document.createElement("button");
-    retry.textContent = "重试";
+    retry.textContent = cur.retry;
     retry.className = "yj-ghost";
     retry.addEventListener("click", () => { if (currentText) explain(currentText, currentCtx); });
 
@@ -264,7 +323,7 @@
     box.appendChild(p2);
     box.appendChild(row);
     answer.appendChild(box);
-    status.textContent = "未配置";
+    status.textContent = cur.notConfigured;
   }
 
   function explain(text, context) {
@@ -273,33 +332,35 @@
     currentText = text;
     buffer = "";
     renderGen++;
+    cur = toEnglish(text) ? STR.en : STR.zh;
+    applyLang(p);
     const answer = p.querySelector(".yj-answer");
     const status = p.querySelector(".yj-status");
-    answer.innerHTML = '<span class="yj-dim">生成中…</span>';
-    status.textContent = "生成中…";
+    answer.innerHTML = '<span class="yj-dim">' + cur.generating + "</span>";
+    status.textContent = cur.generating;
 
     if (port) { try { port.disconnect(); } catch (e) {} }
     port = chrome.runtime.connect({ name: "explain" });
     port.onDisconnect.addListener(() => {
       const st = p.querySelector(".yj-status");
-      if (st && st.textContent.startsWith("生成中")) st.textContent = "连接断开，请刷新页面";
+      if (st && st.textContent.startsWith(cur.generating)) st.textContent = cur.disconnected;
     });
     // 等首字。超过这个时间还没内容就先提示，但请求不会被中断，后续内容到了照常显示
     const watchdog = setTimeout(() => {
       if (buffer === "") {
-        answer.innerHTML = '<span class="yj-err">⚠️ 10 秒没有返回。打开 chrome://extensions → 该扩展 → 服务工作进程，看红色报错。</span>';
-        status.textContent = "超时";
+        answer.innerHTML = '<span class="yj-err">' + esc(cur.slow) + "</span>";
+        status.textContent = cur.timeout;
       }
     }, 10000);
     port.onMessage.addListener((msg) => {
       if (msg.type === "delta") {
         buffer += msg.text;
         scheduleRender();
-        status.textContent = "生成中… " + buffer.length + " 字";
+        status.textContent = cur.generatingN(buffer.length);
       } else if (msg.type === "done") {
         clearTimeout(watchdog);
         renderNow();
-        status.textContent = "完成 · " + buffer.length + " 字";
+        status.textContent = cur.doneN(buffer.length);
       } else if (msg.type === "need_key") {
         clearTimeout(watchdog);
         renderGuide(answer, status);
@@ -307,12 +368,13 @@
         clearTimeout(watchdog);
         renderGen++;
         answer.innerHTML = '<span class="yj-err">⚠️ ' + esc(msg.text) + "</span>";
-        status.textContent = "出错";
+        status.textContent = cur.error;
       }
     });
+    // 分隔文案用英文，中英两种输出都成立，也省掉一套翻译
     const userMsg = context && context.length > text.length
-      ? '选中的片段：\n"""\n' + text + '\n"""\n\n它所在的段落（供理解上下文，不必逐句解释）：\n"""\n' + context + '\n"""\n\n请重点解释选中的片段。'
-      : '网页原文：\n"""\n' + text + '\n"""\n请解释。';
+      ? 'Selected text:\n"""\n' + text + '\n"""\n\nSurrounding paragraph (context so you can resolve pronouns; do not explain it line by line):\n"""\n' + context + '\n"""\n\nFocus on explaining the selected text.'
+      : 'Text from the page:\n"""\n' + text + '\n"""\nExplain it.';
     currentCtx = context || "";
     port.postMessage({
       type: "explain",
