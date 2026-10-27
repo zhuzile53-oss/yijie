@@ -15,7 +15,7 @@ const cases = [
   ['这是一段普通的中文', true, '常见中文'],
   ['這是一段繁體中文', true, '繁体'],
   ['This is a normal English sentence.', false, '英文'],
-  ['ACCA 是一个国际证书', true, '中英混排，汉字为主'],
+  ['GDP 是一个经济指标', true, '中英混排，汉字为主'],
   ['我们 use Chinese mixed with a lot of English words here', false, '中英混排，英文为主'],
   ['1234 5678', false, '纯数字'],
   ['，。！？', false, '纯标点'],

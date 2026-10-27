@@ -5,7 +5,7 @@ globalThis.YJ_LANG = {
     const cjk = (s.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]/g) || []).length;
     if (cjk < 2) return false; // 单个汉字多半是符号或误选
     const latin = (s.match(/[A-Za-z]/g) || []).length;
-    // 中英混排（"ACCA 是一个证书"）时，汉字占三成就按中文处理
+    // 中英混排（"GDP 是一个经济指标"）时，汉字占三成就按中文处理
     return cjk / (cjk + latin) >= 0.3;
   }
 };
