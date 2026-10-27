@@ -7,7 +7,7 @@
  h1{font-size:18px;margin-bottom:4px} p{color:#666;font-size:13px}
  h2{font-size:15px;margin:36px 0 0;padding-top:20px;border-top:1px solid #eee}
  label{display:block;margin:20px 0 6px;font-size:13px;font-weight:600}
- input,textarea{width:100%;padding:9px 11px;border:1px solid #d5d5d5;border-radius:8px;font-size:13px;box-sizing:border-box}
+ input,textarea,select{width:100%;padding:9px 11px;border:1px solid #d5d5d5;border-radius:8px;font-size:13px;box-sizing:border-box;background:#fff}
  textarea{font:12.5px/1.7 ui-monospace,Menlo,monospace;resize:vertical}
  .hint{color:#888;font-size:12px;margin:6px 0 0;line-height:1.6}
  .row{display:flex;gap:10px;margin-top:24px;align-items:center;flex-wrap:wrap}
@@ -22,13 +22,21 @@
 <input id="apiKey" type="password" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
 <p class="hint">只保存在本机浏览器存储里，不会上传。DeepSeek 在 platform.deepseek.com 申请，OpenAI 在 platform.openai.com 申请。</p>
 
+<label>服务预设</label>
+<select id="preset">
+  <option value="deepseek">DeepSeek（推荐）</option>
+  <option value="openai">OpenAI</option>
+  <option value="ollama">本地 Ollama</option>
+  <option value="custom">自定义 / 其他 OpenAI 兼容服务</option>
+</select>
+
 <label>接口地址</label>
 <input id="baseUrl" placeholder="https://api.deepseek.com/v1" spellcheck="false">
-<p class="hint">填到 <code>/v1</code> 这一层即可，程序自动拼 <code>/chat/completions</code>。本地 Ollama 一般是 http://localhost:11434/v1。</p>
+<p class="hint">填到 <code>/v1</code> 这一层即可，程序自动拼 <code>/chat/completions</code>；直接粘贴完整地址也能识别。换自定义域名时浏览器会弹窗请求访问授权，点「允许」才能用。</p>
 
 <label>模型</label>
 <input id="model" placeholder="deepseek-chat" spellcheck="false">
-<p class="hint">DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填你本地拉取的模型名，如 qwen2.5:7b。</p>
+<p class="hint">DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填本地拉取的模型名，如 qwen2.5:7b。</p>
 
 <h2>提示词</h2>
 <p>决定模型怎么解释。改完点「保存」立即生效，已打开的页面也不用刷新。</p>

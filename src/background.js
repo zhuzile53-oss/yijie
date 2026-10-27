@@ -39,6 +39,25 @@ chrome.action.onClicked.addListener(() => {
   chrome.runtime.openOptionsPage();
 });
 
+// 把 HTTP 状态码翻成用户能行动的话，别只甩一个数字
+function httpErrorText(status, detail) {
+  const tail = detail ? "（" + detail + "）" : "";
+  if (status === 401) return "API Key 无效或已失效（401），去设置页重新填" + tail;
+  if (status === 403) return "这个 Key 没有访问该模型或接口的权限（403）" + tail;
+  if (status === 404) return "接口地址或模型名不对（404），检查设置页的地址和模型" + tail;
+  if (status === 429) return "请求太频繁或额度已用完（429），稍等再试" + tail;
+  if (status >= 500) return "模型服务端出错（" + status + "），稍后重试" + tail;
+  return "请求失败 HTTP " + status + tail;
+}
+
+function netErrorText(e) {
+  const m = String((e && e.message) || e);
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) {
+    return "连不上这个接口：检查地址是否写对、网络是否通（必要时开代理），或该域名还没授权给本扩展。";
+  }
+  return "网络错误：" + m;
+}
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "explain") return;
 
@@ -57,6 +76,10 @@ chrome.runtime.onConnect.addListener((port) => {
     if (!apiKey) {
       // 页面收到后会渲染引导卡片，而不是甩一行红字
       safePost(port, { type: "need_key" });
+      return;
+    }
+    if (!/^https?:\/\//i.test(baseUrl)) {
+      safePost(port, { type: "error", text: "接口地址必须以 http:// 或 https:// 开头，去设置页改一下。" });
       return;
     }
 
@@ -83,7 +106,7 @@ chrome.runtime.onConnect.addListener((port) => {
         try {
           detail = (await res.json())?.error?.message || "";
         } catch (e) {}
-        safePost(port, { type: "error", text: detail || ("请求失败 HTTP " + res.status) });
+        safePost(port, { type: "error", text: httpErrorText(res.status, detail) });
         return;
       }
 
@@ -111,7 +134,7 @@ chrome.runtime.onConnect.addListener((port) => {
       safePost(port, { type: "done" });
     } catch (e) {
       if (e && e.name === "AbortError") return;
-      safePost(port, { type: "error", text: "网络错误：" + (e.message || e) });
+      safePost(port, { type: "error", text: netErrorText(e) });
     }
   });
 });
