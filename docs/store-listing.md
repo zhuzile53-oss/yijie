@@ -131,9 +131,11 @@ Explain text that the user selects on a web page, in the user's own language, us
 | `shot-1.png` | 英文文章 → 中文讲解（简明） | 1（商店首图） |
 | `shot-2.png` | 中文文章 → 英文讲解 | 2 |
 | `shot-3.png` | 学术论文 → 中文详解 | 3 |
+| `shot-4.png` | 设置页（英文界面，BYOK 展示） | 4 |
 | `tile-440x280.png` | 小型宣传图（可选） | — |
 
-> `shot-4.png`（设置页）**暂时不要上传**：设置页目前只有中文界面，而商品页是英文，审核可能认为与描述不符。等设置页做完 i18n 再补第 4 张。
+> 设置页已经做了 i18n：界面语言跟随**浏览器语言**（中文浏览器显示中文，其他显示英文）。
+> `shot-4.png` 是在 `--lang=en-US` 下截的，对应英文用户看到的界面。
 
 ---
 

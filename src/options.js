@@ -14,6 +14,130 @@ const PRESETS = {
   ollama: { baseUrl: "http://localhost:11434/v1", model: "qwen2.5:7b" }
 };
 
+// 设置页跟着浏览器语言走（和面板不同：面板跟的是"这次输出什么语言"）
+const UI_LANG = String(navigator.language || "en").toLowerCase().startsWith("zh") ? "zh" : "en";
+
+const STR = {
+  zh: {
+    pageTitle: "译解 · 设置",
+    intro: "选中网页上的文字 → 点左侧「解释」按钮 → 右侧显示中文翻译与讲解。请求直接从你的浏览器发往下面填写的接口，不经过任何第三方服务器。",
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "粘贴你的 API Key",
+    apiKeyHint: "只保存在本机浏览器存储里，不会上传。DeepSeek 在 platform.deepseek.com 申请，OpenAI 在 platform.openai.com 申请。",
+    presetLabel: "服务预设",
+    presetDeepseek: "DeepSeek（推荐）",
+    presetOpenai: "OpenAI",
+    presetOllama: "本地 Ollama",
+    presetCustom: "自定义 / 其他 OpenAI 兼容服务",
+    baseUrlLabel: "接口地址",
+    baseUrlHint: "填到 /v1 这一层即可，程序自动拼 /chat/completions；直接粘贴完整地址也能识别。换自定义域名时浏览器会弹窗请求访问授权，点「允许」才能用。",
+    modelLabel: "模型",
+    modelHint: "DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填本地拉取的模型名，如 qwen2.5:7b。",
+    promptsTitle: "提示词",
+    promptsIntro: "决定模型怎么解释。改完点「保存」立即生效，已打开的页面也不用刷新。",
+    outputLangLabel: "输出语言",
+    outputLangAuto: "自动：原文是中文 → 用英文解释；其他 → 用中文解释",
+    outputLangZh: "始终用中文解释",
+    detailsEnZh: "英文原文 → 中文讲解",
+    defaultPromptLabel: "默认提示词 · 点「解释」时使用",
+    detailPromptLabel: "详解提示词 · 面板里点「详解」时使用",
+    detailsZhEn: "中文原文 → English explanation",
+    zhEnHint: "选中中文时用这两段，输出英文，给读中文网站的英语用户。上方「输出语言」选「始终中文」时这两段不生效。",
+    zhDefaultLabel: "默认提示词 · 点「解释」时使用",
+    zhDetailLabel: "详解提示词 · 面板里点「详解」时使用",
+    save: "保存",
+    test: "测试连接",
+    resetPrompts: "恢复默认提示词",
+    clearKey: "清除 Key",
+    disabledTitle: "已禁用的站点",
+    disabledIntro: "在面板里点「本站禁用」会加到这里。点「恢复」立刻生效，不用刷新页面。",
+    restoreAll: "全部恢复",
+    usage: "用法：选中一段文字 → 点屏幕左侧「解释」按钮（或按 Alt+E）→ 右侧弹出面板，可切「详解」、可复制。",
+    needKey: "请先填写 API Key",
+    saved: "✅ 已保存",
+    noPermission: "❌ 没有获得访问 {origin} 的授权，无法调用接口",
+    promptsReset: "已恢复默认提示词，记得点保存",
+    keyCleared: "已清除 Key",
+    testing: "测试中…",
+    testOk: "✅ 连接成功",
+    test401: "❌ Key 无效：",
+    test404: "❌ 地址或模型不对：",
+    testFail: "❌ ",
+    testNet: "❌ 连不上该地址：检查地址、网络或代理",
+    presetFilled: "已填入预设，记得点保存",
+    noneDisabled: "（还没有禁用的站点）",
+    restore: "恢复",
+    restoredAll: "已恢复所有站点"
+  },
+  en: {
+    pageTitle: "Yijie · Settings",
+    intro: "Select text on a page → click Explain on the left edge → read the explanation in the side panel. Requests go straight from your browser to the endpoint below; no third-party server is involved.",
+    apiKeyLabel: "API key",
+    apiKeyPlaceholder: "Paste your API key",
+    apiKeyHint: "Stored on this device only, never uploaded. Get one at platform.deepseek.com or platform.openai.com.",
+    presetLabel: "Provider preset",
+    presetDeepseek: "DeepSeek (recommended)",
+    presetOpenai: "OpenAI",
+    presetOllama: "Local Ollama",
+    presetCustom: "Custom / another OpenAI-compatible service",
+    baseUrlLabel: "Base URL",
+    baseUrlHint: "Fill it up to /v1 — the extension appends /chat/completions itself, and a full URL works too. Changing to a custom domain makes the browser ask for permission once; click Allow.",
+    modelLabel: "Model",
+    modelHint: "deepseek-chat for DeepSeek, gpt-4o-mini for OpenAI, or a local model name such as qwen2.5:7b for Ollama.",
+    promptsTitle: "Prompts",
+    promptsIntro: "These control how the model explains. Changes take effect on Save — no page reload needed.",
+    outputLangLabel: "Output language",
+    outputLangAuto: "Auto: Chinese source → English answer; anything else → Chinese answer",
+    outputLangZh: "Always answer in Chinese",
+    detailsEnZh: "English source → Chinese explanation",
+    defaultPromptLabel: "Default prompt · used by Explain",
+    detailPromptLabel: "Detailed prompt · used by the Detailed button",
+    detailsZhEn: "Chinese source → English explanation",
+    zhEnHint: "Used when the selection is Chinese; the answer comes back in English. Ignored when Output language is set to Always Chinese.",
+    zhDefaultLabel: "Default prompt · used by Explain",
+    zhDetailLabel: "Detailed prompt · used by the Detailed button",
+    save: "Save",
+    test: "Test connection",
+    resetPrompts: "Reset prompts",
+    clearKey: "Clear key",
+    disabledTitle: "Disabled sites",
+    disabledIntro: "Sites you turned off from the panel appear here. Restore takes effect immediately, no page reload.",
+    restoreAll: "Restore all",
+    usage: "Usage: select some text → click Explain on the left edge (or press Alt+E) → the panel opens with a Detailed toggle and Copy.",
+    needKey: "Enter an API key first",
+    saved: "✅ Saved",
+    noPermission: "❌ Permission to reach {origin} was not granted",
+    promptsReset: "Default prompts restored — remember to save",
+    keyCleared: "Key cleared",
+    testing: "Testing…",
+    testOk: "✅ Connected",
+    test401: "❌ Invalid key: ",
+    test404: "❌ Wrong URL or model: ",
+    testFail: "❌ ",
+    testNet: "❌ Cannot reach that URL — check the address, network or proxy",
+    presetFilled: "Preset filled — remember to save",
+    noneDisabled: "(no disabled sites)",
+    restore: "Restore",
+    restoredAll: "All sites restored"
+  }
+};
+
+const T = STR[UI_LANG];
+const t = (key) => T[key] || key;
+
+function applyI18n() {
+  document.documentElement.lang = UI_LANG === "zh" ? "zh-CN" : "en";
+  document.title = t("pageTitle");
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+}
+
+applyI18n();
+
 function status(text) {
   $("status").textContent = text;
 }
@@ -96,13 +220,13 @@ $("preset").addEventListener("change", () => {
   if (!p) return;
   $("baseUrl").value = p.baseUrl;
   $("model").value = p.model;
-  status("已填入预设，记得点保存");
+  status(t("presetFilled"));
 });
 
 $("save").addEventListener("click", async () => {
   const apiKey = cleanKey($("apiKey").value);
   if (!apiKey) {
-    status("请先填写 API Key");
+    status(t("needKey"));
     return;
   }
   const baseUrl = cleanBase($("baseUrl").value);
@@ -115,7 +239,7 @@ $("save").addEventListener("click", async () => {
 
   const granted = await ensureHostPermission(baseUrl);
   if (!granted) {
-    status("❌ 没有获得访问 " + originOf(baseUrl) + " 的授权，无法调用接口");
+    status(t("noPermission").replace("{origin}", originOf(baseUrl)));
     return;
   }
   chrome.storage.local.set(
@@ -123,7 +247,7 @@ $("save").addEventListener("click", async () => {
     () => {
       $("baseUrl").value = baseUrl;
       $("preset").value = matchPreset(baseUrl);
-      status("✅ 已保存");
+      status(t("saved"));
     }
   );
 });
@@ -133,13 +257,13 @@ $("resetPrompts").addEventListener("click", () => {
   $("detailPrompt").value = DEFAULT_DETAIL;
   $("systemPromptZh").value = DEFAULT_SYSTEM_ZH;
   $("detailPromptZh").value = DEFAULT_DETAIL_ZH;
-  status("已恢复默认提示词，记得点保存");
+  status(t("promptsReset"));
 });
 
 $("clearKey").addEventListener("click", () => {
   chrome.storage.local.remove("apiKey", () => {
     $("apiKey").value = "";
-    status("已清除 Key");
+    status(t("keyCleared"));
   });
 });
 
@@ -151,7 +275,7 @@ function renderDisabled() {
     if (!list.length) {
       const empty = document.createElement("p");
       empty.className = "hint";
-      empty.textContent = "（还没有禁用的站点）";
+      empty.textContent = t("noneDisabled");
       box.appendChild(empty);
       return;
     }
@@ -162,7 +286,7 @@ function renderDisabled() {
       name.textContent = host;
       const btn = document.createElement("button");
       btn.className = "ghost";
-      btn.textContent = "恢复";
+      btn.textContent = t("restore");
       btn.addEventListener("click", () => {
         chrome.storage.local.set({ disabledSites: list.filter((h) => h !== host) }, renderDisabled);
       });
@@ -176,7 +300,7 @@ function renderDisabled() {
 $("clearSites").addEventListener("click", () => {
   chrome.storage.local.set({ disabledSites: [] }, () => {
     renderDisabled();
-    status("已恢复所有站点");
+    status(t("restoredAll"));
   });
 });
 
@@ -188,7 +312,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 $("test").addEventListener("click", async () => {
   const apiKey = cleanKey($("apiKey").value);
   if (!apiKey) {
-    status("请先填写 API Key");
+    status(t("needKey"));
     return;
   }
   const baseUrl = cleanBase($("baseUrl").value);
@@ -196,11 +320,11 @@ $("test").addEventListener("click", async () => {
 
   const granted = await ensureHostPermission(baseUrl);
   if (!granted) {
-    status("❌ 没有获得访问 " + originOf(baseUrl) + " 的授权");
+    status(t("noPermission").replace("{origin}", originOf(baseUrl)));
     return;
   }
   $("baseUrl").value = baseUrl;
-  status("测试中…");
+  status(t("testing"));
   try {
     const r = await fetch(endpoint(baseUrl), {
       method: "POST",
@@ -213,17 +337,17 @@ $("test").addEventListener("click", async () => {
       })
     });
     if (r.ok) {
-      status("✅ 连接成功");
+      status(t("testOk"));
       return;
     }
     let msg = "HTTP " + r.status;
     try {
       msg = (await r.json())?.error?.message || msg;
     } catch (e) {}
-    const icon = r.status === 401 ? "❌ Key 无效：" : r.status === 404 ? "❌ 地址或模型不对：" : "❌ ";
-    status(icon + msg);
+    const prefix = r.status === 401 ? t("test401") : r.status === 404 ? t("test404") : t("testFail");
+    status(prefix + msg);
   } catch (e) {
     const m = String((e && e.message) || e);
-    status(/Failed to fetch|NetworkError/i.test(m) ? "❌ 连不上该地址：检查地址、网络或代理" : "❌ " + m);
+    status(/Failed to fetch|NetworkError/i.test(m) ? t("testNet") : t("testFail") + m);
   }
 });

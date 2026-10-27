@@ -14,79 +14,77 @@
  button{padding:7px 14px;border-radius:8px;border:none;background:#1f3864;color:#fff;font-size:13px;cursor:pointer}
  button.ghost{background:#eee;color:#333}
  #status{font-size:12px;color:#777}
- .site-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f0f0}
- .site-row span{font:12.5px/1.5 ui-monospace,Menlo,monospace;color:#333}
- .site-row button{padding:3px 12px;font-size:12px}
  details{margin-top:18px;border:1px solid #eee;border-radius:10px;padding:0 14px 6px}
  summary{cursor:pointer;font-size:13px;font-weight:600;padding:12px 0;user-select:none}
  details[open] summary{border-bottom:1px solid #f2f2f2;margin-bottom:4px}
+ .site-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f0f0}
+ .site-row span{font:12.5px/1.5 ui-monospace,Menlo,monospace;color:#333}
+ .site-row button{padding:3px 12px;font-size:12px}
 </style>
 <h1>译解</h1>
-<p>选中网页上的英文 → 点左侧「解释」按钮 → 右侧显示中文翻译与讲解。请求直接从你的浏览器发往下面填写的接口，<b>不经过任何第三方服务器</b>。</p>
+<p data-i18n="intro">选中网页上的文字 → 点左侧「解释」按钮 → 右侧显示中文翻译与讲解。请求直接从你的浏览器发往下面填写的接口，不经过任何第三方服务器。</p>
 
-<label>API Key</label>
-<input id="apiKey" type="password" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
-<p class="hint">只保存在本机浏览器存储里，不会上传。DeepSeek 在 platform.deepseek.com 申请，OpenAI 在 platform.openai.com 申请。</p>
+<label data-i18n="apiKeyLabel">API Key</label>
+<input id="apiKey" type="password" data-i18n-placeholder="apiKeyPlaceholder" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
+<p class="hint" data-i18n="apiKeyHint">只保存在本机浏览器存储里，不会上传。DeepSeek 在 platform.deepseek.com 申请，OpenAI 在 platform.openai.com 申请。</p>
 
-<label>服务预设</label>
+<label data-i18n="presetLabel">服务预设</label>
 <select id="preset">
-  <option value="deepseek">DeepSeek（推荐）</option>
-  <option value="openai">OpenAI</option>
-  <option value="ollama">本地 Ollama</option>
-  <option value="custom">自定义 / 其他 OpenAI 兼容服务</option>
+  <option value="deepseek" data-i18n="presetDeepseek">DeepSeek（推荐）</option>
+  <option value="openai" data-i18n="presetOpenai">OpenAI</option>
+  <option value="ollama" data-i18n="presetOllama">本地 Ollama</option>
+  <option value="custom" data-i18n="presetCustom">自定义 / 其他 OpenAI 兼容服务</option>
 </select>
 
-<label>接口地址</label>
+<label data-i18n="baseUrlLabel">接口地址</label>
 <input id="baseUrl" placeholder="https://api.deepseek.com/v1" spellcheck="false">
-<p class="hint">填到 <code>/v1</code> 这一层即可，程序自动拼 <code>/chat/completions</code>；直接粘贴完整地址也能识别。换自定义域名时浏览器会弹窗请求访问授权，点「允许」才能用。</p>
+<p class="hint" data-i18n="baseUrlHint">填到 /v1 这一层即可，程序自动拼 /chat/completions；直接粘贴完整地址也能识别。换自定义域名时浏览器会弹窗请求访问授权，点「允许」才能用。</p>
 
-<label>模型</label>
+<label data-i18n="modelLabel">模型</label>
 <input id="model" placeholder="deepseek-chat" spellcheck="false">
-<p class="hint">DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填本地拉取的模型名，如 qwen2.5:7b。</p>
+<p class="hint" data-i18n="modelHint">DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填本地拉取的模型名，如 qwen2.5:7b。</p>
 
-<h2>提示词</h2>
-<p>决定模型怎么解释。改完点「保存」立即生效，已打开的页面也不用刷新。</p>
+<h2 data-i18n="promptsTitle">提示词</h2>
+<p data-i18n="promptsIntro">决定模型怎么解释。改完点「保存」立即生效，已打开的页面也不用刷新。</p>
 
-<label>输出语言</label>
+<label data-i18n="outputLangLabel">输出语言</label>
 <select id="outputLang">
-  <option value="auto">自动：原文是中文 → 用英文解释；其他 → 用中文解释</option>
-  <option value="zh">始终用中文解释</option>
+  <option value="auto" data-i18n="outputLangAuto">自动：原文是中文 → 用英文解释；其他 → 用中文解释</option>
+  <option value="zh" data-i18n="outputLangZh">始终用中文解释</option>
 </select>
 
 <details open>
-  <summary>英文原文 → 中文讲解</summary>
-  <label>默认提示词 · 点「解释」时使用</label>
+  <summary data-i18n="detailsEnZh">英文原文 → 中文讲解</summary>
+  <label data-i18n="defaultPromptLabel">默认提示词 · 点「解释」时使用</label>
   <textarea id="systemPrompt" rows="8" spellcheck="false"></textarea>
-  <label>详解提示词 · 面板里点「详解」时使用</label>
+  <label data-i18n="detailPromptLabel">详解提示词 · 面板里点「详解」时使用</label>
   <textarea id="detailPrompt" rows="10" spellcheck="false"></textarea>
 </details>
 
 <details>
-  <summary>中文原文 → English explanation</summary>
-  <p class="hint">选中中文时用这两段，输出英文，给读中文网站的英语用户。上方「输出语言」选「始终中文」时这两段不生效。</p>
-  <label>Default prompt · used by 「解释」</label>
+  <summary data-i18n="detailsZhEn">中文原文 → English explanation</summary>
+  <p class="hint" data-i18n="zhEnHint">选中中文时用这两段，输出英文，给读中文网站的英语用户。上方「输出语言」选「始终中文」时这两段不生效。</p>
+  <label data-i18n="zhDefaultLabel">默认提示词 · 点「解释」时使用</label>
   <textarea id="systemPromptZh" rows="8" spellcheck="false"></textarea>
-  <label>Detailed prompt · used by 「详解」</label>
+  <label data-i18n="zhDetailLabel">详解提示词 · 面板里点「详解」时使用</label>
   <textarea id="detailPromptZh" rows="10" spellcheck="false"></textarea>
 </details>
 
 <div class="row">
-  <button id="save">保存</button>
-  <button id="test" class="ghost">测试连接</button>
-  <button id="resetPrompts" class="ghost">恢复默认提示词</button>
-  <button id="clearKey" class="ghost">清除 Key</button>
+  <button id="save" data-i18n="save">保存</button>
+  <button id="test" class="ghost" data-i18n="test">测试连接</button>
+  <button id="resetPrompts" class="ghost" data-i18n="resetPrompts">恢复默认提示词</button>
+  <button id="clearKey" class="ghost" data-i18n="clearKey">清除 Key</button>
   <span id="status"></span>
 </div>
 
-<h2>已禁用的站点</h2>
-<p>在面板里点「本站禁用」会加到这里。点「恢复」立刻生效，不用刷新页面。</p>
+<h2 data-i18n="disabledTitle">已禁用的站点</h2>
+<p data-i18n="disabledIntro">在面板里点「本站禁用」会加到这里。点「恢复」立刻生效，不用刷新页面。</p>
 <div id="disabledList"></div>
 <div class="row" style="margin-top:14px">
-  <button id="clearSites" class="ghost">全部恢复</button>
+  <button id="clearSites" class="ghost" data-i18n="restoreAll">全部恢复</button>
 </div>
 
-<p class="hint" style="margin-top:28px">
-用法：选中一段英文 → 点屏幕左侧「解释」按钮（或按 <b>Alt+E</b>）→ 右侧弹出面板，可切「详解」、可复制。
-</p>
+<p class="hint" style="margin-top:28px" data-i18n="usage">用法：选中一段文字 → 点屏幕左侧「解释」按钮（或按 Alt+E）→ 右侧弹出面板，可切「详解」、可复制。</p>
 <script src="defaults.js"></script>
 <script src="options.js"></script>
