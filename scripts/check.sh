@@ -67,11 +67,12 @@ sys.exit(fail)
 PY
 [ $? -ne 0 ] && fail=1
 
-head_ "4. 隐私红线（LICENSE 署名除外）"
-# 排除 LICENSE（署名是公开信息）和本脚本自身（它必须写出这些字符串才能扫）
-hits=$(grep -rIni --exclude-dir=.git --exclude-dir=dist --exclude=LICENSE --exclude=check.sh \
-        -e 'zhuzile53' -e 'vitalsource' -e 'workers\.dev' -e 'zile-acca' \
-        -e 'acca-reader' -e 'ADMIN_TOKEN' . 2>/dev/null)
+head_ "4. 隐私红线"
+# 扫的是「私有基础设施与旧项目标识」，不是公开的 GitHub 账号名（那个在 URL 里到处都是）。
+# 排除本脚本自身：它必须写出这些字符串才能扫。
+hits=$(grep -rIni --exclude-dir=.git --exclude-dir=dist --exclude=check.sh \
+        -e 'zile-acca' -e 'zhuzile53\.workers\.dev' -e 'workers\.dev' \
+        -e 'acca-reader' -e 'vitalsource' -e 'ADMIN_TOKEN' . 2>/dev/null)
 if [ -z "$hits" ]; then ok "没有私有域名 / 旧项目名 / 令牌字样"; else bad "命中："; printf '%s\n' "$hits" | sed 's/^/      /'; fi
 
 real_key=$(grep -rInE --exclude-dir=.git --exclude-dir=dist 'sk-[A-Za-z0-9]{24,}' . 2>/dev/null)
