@@ -38,8 +38,8 @@ classroom build and generalised.
   stubbed `fetch`, no key or browser needed
 - `test/lang.test.mjs` — Chinese/English detection cases
 - Icons at 16 / 48 / 128
-- Animated preview (`docs/screenshots/demo.gif`) rendered frame by frame from the
-  real CSS
+- Animated previews (`docs/screenshots/demo-*.gif`) rendered frame by frame
+  from the real CSS, one per direction
 
 ## 0.1.0 — private classroom build (not in this repo)
 
