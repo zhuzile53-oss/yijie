@@ -3,8 +3,18 @@
   window.__yijieLoaded = true;
 
   const D = globalThis.YJ_DEFAULTS || {};
+  const LANG = globalThis.YJ_LANG || { looksChinese: () => false };
+
   let systemPrompt = String(D.systemPrompt || "").trim() || "请用简体中文解释这段英文。";
   let detailPrompt = String(D.detailPrompt || "").trim() || "请用简体中文详细讲解这段英文。";
+  let systemPromptZh = String(D.systemPromptZh || "").trim() || "Explain this Chinese text in plain English.";
+  let detailPromptZh = String(D.detailPromptZh || "").trim() || "Explain this Chinese text in detail in English.";
+  let outputLang = D.outputLang || "auto";
+
+  // 中文原文 → 英文讲解；其他 → 中文讲解。outputLang 设成 zh 时一律中文。
+  function toEnglish(text) {
+    return outputLang !== "zh" && LANG.looksChinese(text);
+  }
 
   let btn = null, panel = null, port = null, currentText = "", currentCtx = "", buffer = "", detailed = false;
 
@@ -38,18 +48,28 @@
 
   // 设置页改完提示词，已打开的页面无需刷新即可生效
   function loadPrompts() {
-    chrome.storage.local.get(["systemPrompt", "detailPrompt"], (s) => {
-      const a = String(s.systemPrompt || "").trim();
-      const b = String(s.detailPrompt || "").trim();
-      if (a) systemPrompt = a;
-      if (b) detailPrompt = b;
-    });
+    chrome.storage.local.get(
+      ["systemPrompt", "detailPrompt", "systemPromptZh", "detailPromptZh", "outputLang"],
+      (s) => {
+        const a = String(s.systemPrompt || "").trim();
+        const b = String(s.detailPrompt || "").trim();
+        const c = String(s.systemPromptZh || "").trim();
+        const d = String(s.detailPromptZh || "").trim();
+        if (a) systemPrompt = a;
+        if (b) detailPrompt = b;
+        if (c) systemPromptZh = c;
+        if (d) detailPromptZh = d;
+        outputLang = s.outputLang === "zh" ? "zh" : "auto";
+      }
+    );
   }
   loadPrompts();
   try {
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "local") return;
-      if ("systemPrompt" in changes || "detailPrompt" in changes) loadPrompts();
+      if ("systemPrompt" in changes || "detailPrompt" in changes ||
+          "systemPromptZh" in changes || "detailPromptZh" in changes ||
+          "outputLang" in changes) loadPrompts();
       if ("disabledSites" in changes) applySites(changes.disabledSites.newValue);
     });
   } catch (e) {}
@@ -131,12 +151,13 @@
     }
   }
 
-  function showButton(x, y) {
+  function showButton(x, y, selText) {
     removeButton();
     const r = selectionRect();
     btn = document.createElement("button");
     btn.className = "yj-fab";
-    btn.textContent = "解释";
+    // 按钮语言跟着输出语言走，用户一眼就知道会得到什么
+    btn.textContent = toEnglish(selText) ? "Explain" : "解释";
     btn.style.position = "fixed";
     btn.style.left = "16px";
     btn.style.right = "auto";
@@ -292,7 +313,9 @@
     currentCtx = context || "";
     port.postMessage({
       type: "explain",
-      system: detailed ? detailPrompt : systemPrompt,
+      system: toEnglish(text)
+        ? (detailed ? detailPromptZh : systemPromptZh)
+        : (detailed ? detailPrompt : systemPrompt),
       user: userMsg,
       max_tokens: detailed ? 1800 : 700
     });
@@ -303,7 +326,7 @@
     if (panel && panel.contains(e.target)) return;
     setTimeout(() => {
       const sel = String(window.getSelection() || "").trim();
-      if (sel.length >= 3) showButton(e.clientX, e.clientY);
+      if (sel.length >= 3) showButton(e.clientX, e.clientY, sel);
       else removeButton();
     }, 10);
   });

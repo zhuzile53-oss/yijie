@@ -32,6 +32,7 @@
       "all_frames": true,
       "js": [
         "src/defaults.js",
+        "src/lang.js",
         "src/content.js"
       ],
       "css": [

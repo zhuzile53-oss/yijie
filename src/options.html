@@ -17,6 +17,9 @@
  .site-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f0f0}
  .site-row span{font:12.5px/1.5 ui-monospace,Menlo,monospace;color:#333}
  .site-row button{padding:3px 12px;font-size:12px}
+ details{margin-top:18px;border:1px solid #eee;border-radius:10px;padding:0 14px 6px}
+ summary{cursor:pointer;font-size:13px;font-weight:600;padding:12px 0;user-select:none}
+ details[open] summary{border-bottom:1px solid #f2f2f2;margin-bottom:4px}
 </style>
 <h1>译解</h1>
 <p>选中网页上的英文 → 点左侧「解释」按钮 → 右侧显示中文翻译与讲解。请求直接从你的浏览器发往下面填写的接口，<b>不经过任何第三方服务器</b>。</p>
@@ -44,11 +47,28 @@
 <h2>提示词</h2>
 <p>决定模型怎么解释。改完点「保存」立即生效，已打开的页面也不用刷新。</p>
 
-<label>默认提示词 · 点「解释」时使用</label>
-<textarea id="systemPrompt" rows="8" spellcheck="false"></textarea>
+<label>输出语言</label>
+<select id="outputLang">
+  <option value="auto">自动：原文是中文 → 用英文解释；其他 → 用中文解释</option>
+  <option value="zh">始终用中文解释</option>
+</select>
 
-<label>详解提示词 · 面板里点「详解」时使用</label>
-<textarea id="detailPrompt" rows="10" spellcheck="false"></textarea>
+<details open>
+  <summary>英文原文 → 中文讲解</summary>
+  <label>默认提示词 · 点「解释」时使用</label>
+  <textarea id="systemPrompt" rows="8" spellcheck="false"></textarea>
+  <label>详解提示词 · 面板里点「详解」时使用</label>
+  <textarea id="detailPrompt" rows="10" spellcheck="false"></textarea>
+</details>
+
+<details>
+  <summary>中文原文 → English explanation</summary>
+  <p class="hint">选中中文时用这两段，输出英文，给读中文网站的英语用户。上方「输出语言」选「始终中文」时这两段不生效。</p>
+  <label>Default prompt · used by 「解释」</label>
+  <textarea id="systemPromptZh" rows="8" spellcheck="false"></textarea>
+  <label>Detailed prompt · used by 「详解」</label>
+  <textarea id="detailPromptZh" rows="10" spellcheck="false"></textarea>
+</details>
 
 <div class="row">
   <button id="save">保存</button>

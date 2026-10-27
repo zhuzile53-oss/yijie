@@ -5,6 +5,8 @@ const DEFAULT_BASE = D.baseUrl || "https://api.deepseek.com/v1";
 const DEFAULT_MODEL = D.model || "deepseek-chat";
 const DEFAULT_SYSTEM = D.systemPrompt || "";
 const DEFAULT_DETAIL = D.detailPrompt || "";
+const DEFAULT_SYSTEM_ZH = D.systemPromptZh || "";
+const DEFAULT_DETAIL_ZH = D.detailPromptZh || "";
 
 const PRESETS = {
   deepseek: { baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
@@ -73,15 +75,21 @@ function matchPreset(baseUrl) {
   return "custom";
 }
 
-chrome.storage.local.get(["apiKey", "baseUrl", "model", "systemPrompt", "detailPrompt"], (s) => {
-  const baseUrl = s.baseUrl || DEFAULT_BASE;
-  $("apiKey").value = s.apiKey || "";
-  $("baseUrl").value = baseUrl;
-  $("model").value = s.model || DEFAULT_MODEL;
-  $("systemPrompt").value = s.systemPrompt || DEFAULT_SYSTEM;
-  $("detailPrompt").value = s.detailPrompt || DEFAULT_DETAIL;
-  $("preset").value = matchPreset(baseUrl);
-});
+chrome.storage.local.get(
+  ["apiKey", "baseUrl", "model", "systemPrompt", "detailPrompt", "systemPromptZh", "detailPromptZh", "outputLang"],
+  (s) => {
+    const baseUrl = s.baseUrl || DEFAULT_BASE;
+    $("apiKey").value = s.apiKey || "";
+    $("baseUrl").value = baseUrl;
+    $("model").value = s.model || DEFAULT_MODEL;
+    $("systemPrompt").value = s.systemPrompt || DEFAULT_SYSTEM;
+    $("detailPrompt").value = s.detailPrompt || DEFAULT_DETAIL;
+    $("systemPromptZh").value = s.systemPromptZh || DEFAULT_SYSTEM_ZH;
+    $("detailPromptZh").value = s.detailPromptZh || DEFAULT_DETAIL_ZH;
+    $("outputLang").value = s.outputLang === "zh" ? "zh" : "auto";
+    $("preset").value = matchPreset(baseUrl);
+  }
+);
 
 $("preset").addEventListener("change", () => {
   const p = PRESETS[$("preset").value];
@@ -101,22 +109,30 @@ $("save").addEventListener("click", async () => {
   const model = String($("model").value || "").trim() || DEFAULT_MODEL;
   const systemPrompt = String($("systemPrompt").value || "").trim() || DEFAULT_SYSTEM;
   const detailPrompt = String($("detailPrompt").value || "").trim() || DEFAULT_DETAIL;
+  const systemPromptZh = String($("systemPromptZh").value || "").trim() || DEFAULT_SYSTEM_ZH;
+  const detailPromptZh = String($("detailPromptZh").value || "").trim() || DEFAULT_DETAIL_ZH;
+  const outputLang = $("outputLang").value === "zh" ? "zh" : "auto";
 
   const granted = await ensureHostPermission(baseUrl);
   if (!granted) {
     status("❌ 没有获得访问 " + originOf(baseUrl) + " 的授权，无法调用接口");
     return;
   }
-  chrome.storage.local.set({ apiKey, baseUrl, model, systemPrompt, detailPrompt }, () => {
-    $("baseUrl").value = baseUrl;
-    $("preset").value = matchPreset(baseUrl);
-    status("✅ 已保存");
-  });
+  chrome.storage.local.set(
+    { apiKey, baseUrl, model, systemPrompt, detailPrompt, systemPromptZh, detailPromptZh, outputLang },
+    () => {
+      $("baseUrl").value = baseUrl;
+      $("preset").value = matchPreset(baseUrl);
+      status("✅ 已保存");
+    }
+  );
 });
 
 $("resetPrompts").addEventListener("click", () => {
   $("systemPrompt").value = DEFAULT_SYSTEM;
   $("detailPrompt").value = DEFAULT_DETAIL;
+  $("systemPromptZh").value = DEFAULT_SYSTEM_ZH;
+  $("detailPromptZh").value = DEFAULT_DETAIL_ZH;
   status("已恢复默认提示词，记得点保存");
 });
 
