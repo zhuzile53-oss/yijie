@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>译解 · 设置</title>
+<style>
+ body{font:14px/1.7 -apple-system,"PingFang SC",sans-serif;max-width:560px;margin:48px auto;color:#222;padding:0 20px}
+ h1{font-size:18px;margin-bottom:4px} p{color:#666;font-size:13px}
+ label{display:block;margin:20px 0 6px;font-size:13px;font-weight:600}
+ input{width:100%;padding:9px 11px;border:1px solid #d5d5d5;border-radius:8px;font-size:13px;box-sizing:border-box}
+ .hint{color:#888;font-size:12px;margin:6px 0 0;line-height:1.6}
+ .row{display:flex;gap:10px;margin-top:24px;align-items:center}
+ button{padding:7px 16px;border-radius:8px;border:none;background:#1f3864;color:#fff;font-size:13px;cursor:pointer}
+ button.ghost{background:#eee;color:#333}
+ #status{font-size:12px;color:#777}
+</style>
+<h1>译解</h1>
+<p>选中网页上的英文 → 点左侧「解释」按钮 → 右侧显示中文翻译与讲解。请求直接从你的浏览器发往下面填写的接口，<b>不经过任何第三方服务器</b>。</p>
+
+<label>API Key</label>
+<input id="apiKey" type="password" placeholder="粘贴你的 API Key" autocomplete="off" spellcheck="false">
+<p class="hint">只保存在本机浏览器存储里，不会上传。DeepSeek 在 platform.deepseek.com 申请，OpenAI 在 platform.openai.com 申请。</p>
+
+<label>接口地址</label>
+<input id="baseUrl" placeholder="https://api.deepseek.com/v1" spellcheck="false">
+<p class="hint">填到 <code>/v1</code> 这一层即可，程序自动拼 <code>/chat/completions</code>。本地 Ollama 一般是 http://localhost:11434/v1。</p>
+
+<label>模型</label>
+<input id="model" placeholder="deepseek-chat" spellcheck="false">
+<p class="hint">DeepSeek 用 deepseek-chat；OpenAI 用 gpt-4o-mini；Ollama 填你本地拉取的模型名，如 qwen2.5:7b。</p>
+
+<div class="row">
+  <button id="save">保存</button>
+  <button id="test" class="ghost">测试连接</button>
+  <span id="status"></span>
+</div>
+
+<p class="hint" style="margin-top:28px">
+用法：选中一段英文 → 点屏幕左侧「解释」按钮（或按 <b>Alt+E</b>）→ 右侧弹出面板，可切「详解」、可复制。
+</p>
+<script src="options.js"></script>

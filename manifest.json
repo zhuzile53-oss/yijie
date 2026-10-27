@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "译解",
+  "version": "0.1.0",
+  "description": "选中网页上的英文，右侧即时给出中文翻译与讲解。自带 API Key，无后端。",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.deepseek.com/*",
+    "https://api.openai.com/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "https://mail.google.com/*",
+        "https://*.notion.so/*",
+        "https://*.feishu.cn/*",
+        "https://docs.google.com/*"
+      ],
+      "all_frames": true,
+      "js": [
+        "src/content.js"
+      ],
+      "css": [
+        "src/panel.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "src/options.html",
+  "action": {
+    "default_title": "译解 · 设置"
+  }
+}
