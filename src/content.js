@@ -8,6 +8,34 @@
 
   let btn = null, panel = null, port = null, currentText = "", currentCtx = "", buffer = "", detailed = false;
 
+  // 站点开关：按 hostname 记，来自面板的「本站禁用」或设置页的恢复
+  const HOST = location.hostname || "";
+  let disabledSites = [];
+  let siteDisabled = false;
+
+  function applySites(list) {
+    disabledSites = Array.isArray(list) ? list : [];
+    siteDisabled = !!HOST && disabledSites.indexOf(HOST) >= 0;
+    if (siteDisabled) {
+      removeButton();
+      if (port) { try { port.disconnect(); } catch (e) {} port = null; }
+      if (panel) panel.style.display = "none";
+    }
+  }
+
+  function disableSite() {
+    if (!HOST) return;
+    if (disabledSites.indexOf(HOST) < 0) disabledSites.push(HOST);
+    chrome.storage.local.set({ disabledSites });
+    applySites(disabledSites);
+    if (panel) {
+      panel.querySelector(".yj-status").textContent = "已禁用本站：" + HOST;
+      setTimeout(() => { if (panel) panel.style.display = "none"; }, 1500);
+    }
+  }
+
+  chrome.storage.local.get(["disabledSites"], (s) => applySites(s.disabledSites));
+
   // 设置页改完提示词，已打开的页面无需刷新即可生效
   function loadPrompts() {
     chrome.storage.local.get(["systemPrompt", "detailPrompt"], (s) => {
@@ -22,6 +50,7 @@
     chrome.storage.onChanged.addListener((changes, area) => {
       if (area !== "local") return;
       if ("systemPrompt" in changes || "detailPrompt" in changes) loadPrompts();
+      if ("disabledSites" in changes) applySites(changes.disabledSites.newValue);
     });
   } catch (e) {}
 
@@ -103,7 +132,7 @@
         </span>
       </div>
       <div class="yj-body"><div class="yj-answer"></div></div>
-      <div class="yj-foot"><span class="yj-status">就绪</span></div>`;
+      <div class="yj-foot"><span class="yj-status">就绪</span><button class="yj-disable" title="在本站不再弹出，可在设置页恢复">本站禁用</button></div>`;
     panel.querySelector(".yj-close").addEventListener("click", () => {
       if (port) { try { port.disconnect(); } catch (e) {} port = null; }
       panel.style.display = "none";
@@ -122,6 +151,7 @@
     panel.querySelector(".yj-settings").addEventListener("click", () => {
       try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
     });
+    panel.querySelector(".yj-disable").addEventListener("click", disableSite);
     document.documentElement.appendChild(panel);
     return panel;
   }
@@ -221,6 +251,7 @@
   }
 
   document.addEventListener("mouseup", (e) => {
+    if (siteDisabled) return;
     if (panel && panel.contains(e.target)) return;
     setTimeout(() => {
       const sel = String(window.getSelection() || "").trim();
@@ -234,6 +265,7 @@
   });
 
   document.addEventListener("keydown", (e) => {
+    if (siteDisabled) return;
     if (e.altKey && (e.key === "e" || e.key === "E")) {
       const sel = window.getSelection();
       const t = String(sel || "").trim();

@@ -5,7 +5,7 @@
 const DEFAULT_BASE = "https://api.deepseek.com/v1";
 const DEFAULT_MODEL = "deepseek-chat";
 // 超过这么久没有任何新内容，就认为流断了，主动收尾而不是永远转圈
-const STALL_MS = 45000;
+const STALL_MS = 20000;
 
 async function getConfig() {
   const s = await chrome.storage.local.get(["apiKey", "baseUrl", "model"]);
@@ -285,7 +285,7 @@ chrome.runtime.onConnect.addListener((port) => {
       stopIdle();
       if (e && e.name === "AbortError") {
         if (stalled) {
-          safePost(port, { type: "error", text: "生成中断：45 秒没有收到新内容，可能是网络或服务端卡住。" });
+          safePost(port, { type: "error", text: "生成中断：20 秒没有收到新内容，可能是网络或服务端卡住。" });
         }
         return;
       }

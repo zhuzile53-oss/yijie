@@ -127,6 +127,48 @@ $("clearKey").addEventListener("click", () => {
   });
 });
 
+function renderDisabled() {
+  chrome.storage.local.get(["disabledSites"], (s) => {
+    const list = Array.isArray(s.disabledSites) ? s.disabledSites.slice() : [];
+    const box = $("disabledList");
+    box.textContent = "";
+    if (!list.length) {
+      const empty = document.createElement("p");
+      empty.className = "hint";
+      empty.textContent = "（还没有禁用的站点）";
+      box.appendChild(empty);
+      return;
+    }
+    list.forEach((host) => {
+      const row = document.createElement("div");
+      row.className = "site-row";
+      const name = document.createElement("span");
+      name.textContent = host;
+      const btn = document.createElement("button");
+      btn.className = "ghost";
+      btn.textContent = "恢复";
+      btn.addEventListener("click", () => {
+        chrome.storage.local.set({ disabledSites: list.filter((h) => h !== host) }, renderDisabled);
+      });
+      row.appendChild(name);
+      row.appendChild(btn);
+      box.appendChild(row);
+    });
+  });
+}
+
+$("clearSites").addEventListener("click", () => {
+  chrome.storage.local.set({ disabledSites: [] }, () => {
+    renderDisabled();
+    status("已恢复所有站点");
+  });
+});
+
+renderDisabled();
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && "disabledSites" in changes) renderDisabled();
+});
+
 $("test").addEventListener("click", async () => {
   const apiKey = cleanKey($("apiKey").value);
   if (!apiKey) {
