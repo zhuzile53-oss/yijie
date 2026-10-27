@@ -74,6 +74,30 @@
     }
   }
 
+  // 每来一个 token 就重建整段 DOM 会卡；改成每帧最多渲染一次，渲染的永远是最新全文。
+  // renderGen 用来丢弃"上一轮请求遗留的待渲染帧"，否则引导卡片/报错会被旧内容覆盖。
+  let rafPending = false;
+  let renderGen = 0;
+
+  function renderNow() {
+    if (!panel) return;
+    const el = panel.querySelector(".yj-answer");
+    if (el) renderAnswer(el, buffer);
+    const body = panel.querySelector(".yj-body");
+    if (body) body.scrollTop = body.scrollHeight;
+  }
+
+  function scheduleRender() {
+    if (rafPending) return;
+    rafPending = true;
+    const gen = renderGen;
+    const raf = window.requestAnimationFrame || ((cb) => setTimeout(cb, 16));
+    raf(() => {
+      rafPending = false;
+      if (gen === renderGen) renderNow();
+    });
+  }
+
   function removeButton() {
     if (btn) { btn.remove(); btn = null; }
   }
@@ -85,14 +109,26 @@
     return r && r.width ? r : null;
   }
 
-  function contextOf(sel) {
+  // 取选区所在段落作为上下文。原实现算出了 t 却 return ""，功能一直是死的。
+  function contextOf(sel, selectedText) {
     try {
       let n = sel.anchorNode;
       while (n && n.nodeType !== 1) n = n.parentNode;
-      const block = n && n.closest ? (n.closest("p,li,td,div") || n) : n;
-      const t = (block ? block.innerText : "") || "";
+      if (!n || !n.closest) return "";
+      const block = n.closest("p,li,td,dd,blockquote,figcaption") || n.closest("div") || n;
+      if (block === document.body || block === document.documentElement) return "";
+      const text = String(block.innerText || block.textContent || "").replace(/\s+/g, " ").trim();
+      if (!text) return "";
+      if (text.length <= 600) return text;
+      // 段落太长时，取包含选区的 600 字窗口，而不是永远截开头
+      const probe = String(selectedText || "").replace(/\s+/g, " ").trim().slice(0, 40);
+      const at = probe ? text.indexOf(probe) : -1;
+      if (at < 0) return text.slice(0, 600);
+      const start = Math.max(0, Math.min(at - 150, text.length - 600));
+      return text.slice(start, start + 600);
+    } catch (e) {
       return "";
-    } catch (e) { return ""; }
+    }
   }
 
   function showButton(x, y) {
@@ -111,7 +147,7 @@
       e.preventDefault(); e.stopPropagation();
       const sel = window.getSelection();
       const txt = String(sel || "").trim();
-      if (txt) explain(txt, contextOf(sel));
+      if (txt) explain(txt, contextOf(sel, txt));
       removeButton();
     });
     document.documentElement.appendChild(btn);
@@ -132,7 +168,13 @@
         </span>
       </div>
       <div class="yj-body"><div class="yj-answer"></div></div>
-      <div class="yj-foot"><span class="yj-status">就绪</span><button class="yj-disable" title="在本站不再弹出，可在设置页恢复">本站禁用</button></div>`;
+      <div class="yj-foot">
+        <span class="yj-status">就绪</span>
+        <span class="yj-foot-actions">
+          <button class="yj-regen" title="用当前设置重新生成">重新生成</button>
+          <button class="yj-disable" title="在本站不再弹出，可在设置页恢复">本站禁用</button>
+        </span>
+      </div>`;
     panel.querySelector(".yj-close").addEventListener("click", () => {
       if (port) { try { port.disconnect(); } catch (e) {} port = null; }
       panel.style.display = "none";
@@ -152,6 +194,9 @@
       try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
     });
     panel.querySelector(".yj-disable").addEventListener("click", disableSite);
+    panel.querySelector(".yj-regen").addEventListener("click", () => {
+      if (currentText) explain(currentText, currentCtx);
+    });
     document.documentElement.appendChild(panel);
     return panel;
   }
@@ -159,6 +204,7 @@
   // 没填 Key 时不要甩一行红字，告诉用户下一步做什么
   function renderGuide(answer, status) {
     buffer = "";
+    renderGen++;
     answer.textContent = "";
     const box = document.createElement("div");
     box.className = "yj-guide";
@@ -202,6 +248,7 @@
     p.style.display = "flex";
     currentText = text;
     buffer = "";
+    renderGen++;
     const answer = p.querySelector(".yj-answer");
     const status = p.querySelector(".yj-status");
     answer.innerHTML = '<span class="yj-dim">生成中…</span>';
@@ -223,17 +270,18 @@
     port.onMessage.addListener((msg) => {
       if (msg.type === "delta") {
         buffer += msg.text;
-        renderAnswer(answer, buffer);
-        p.querySelector(".yj-body").scrollTop = p.querySelector(".yj-body").scrollHeight;
+        scheduleRender();
         status.textContent = "生成中… " + buffer.length + " 字";
       } else if (msg.type === "done") {
         clearTimeout(watchdog);
+        renderNow();
         status.textContent = "完成 · " + buffer.length + " 字";
       } else if (msg.type === "need_key") {
         clearTimeout(watchdog);
         renderGuide(answer, status);
       } else if (msg.type === "error") {
         clearTimeout(watchdog);
+        renderGen++;
         answer.innerHTML = '<span class="yj-err">⚠️ ' + esc(msg.text) + "</span>";
         status.textContent = "出错";
       }
@@ -269,7 +317,7 @@
     if (e.altKey && (e.key === "e" || e.key === "E")) {
       const sel = window.getSelection();
       const t = String(sel || "").trim();
-      if (t.length >= 3) { e.preventDefault(); explain(t, contextOf(sel)); removeButton(); }
+      if (t.length >= 3) { e.preventDefault(); explain(t, contextOf(sel, t)); removeButton(); }
     }
   });
 })();

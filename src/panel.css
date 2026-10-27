@@ -30,9 +30,11 @@
 .yj-settings:hover { transform: rotate(30deg); }
 .yj-body { flex: 1 1 0; min-height: 0; padding: 10px 14px; overflow-y: auto; }
 .yj-answer { white-space: pre-wrap; word-break: break-word; }
-.yj-foot { padding: 6px 14px 10px; font-size: 10.5px; color: #999; display: flex; align-items: center; justify-content: space-between; }
-.yj-disable { background: none; border: none; padding: 0; font-size: 10.5px; color: #bbb; cursor: pointer; }
-.yj-disable:hover { color: #c62828; text-decoration: underline; }
+.yj-foot { padding: 6px 14px 10px; font-size: 10.5px; color: #999; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.yj-foot-actions { display: flex; gap: 10px; flex: none; }
+.yj-foot-actions button { background: none; border: none; padding: 0; font-size: 10.5px; color: #bbb; cursor: pointer; }
+.yj-foot-actions button:hover { color: #1f3864; text-decoration: underline; }
+.yj-foot-actions .yj-disable:hover { color: #c62828; }
 .yj-dim { color: #999; }
 .yj-err { color: #c62828; }
 
