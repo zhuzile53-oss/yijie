@@ -183,12 +183,13 @@
       const st = p.querySelector(".yj-status");
       if (st && st.textContent.startsWith("生成中")) st.textContent = "连接断开，请刷新页面";
     });
+    // 等首字。推理类模型首字可能慢，给 30 秒；之后的中断由后台的 45 秒空闲守卫兜底
     const watchdog = setTimeout(() => {
       if (buffer === "") {
-        answer.innerHTML = '<span class="yj-err">⚠️ 20 秒没有返回。打开 chrome://extensions → 该扩展 → 服务工作进程，看红色报错。</span>';
+        answer.innerHTML = '<span class="yj-err">⚠️ 30 秒没有返回。打开 chrome://extensions → 该扩展 → 服务工作进程，看红色报错。</span>';
         status.textContent = "超时";
       }
-    }, 20000);
+    }, 30000);
     port.onMessage.addListener((msg) => {
       if (msg.type === "delta") {
         buffer += msg.text;

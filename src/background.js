@@ -4,6 +4,8 @@
 
 const DEFAULT_BASE = "https://api.deepseek.com/v1";
 const DEFAULT_MODEL = "deepseek-chat";
+// 超过这么久没有任何新内容，就认为流断了，主动收尾而不是永远转圈
+const STALL_MS = 45000;
 
 async function getConfig() {
   const s = await chrome.storage.local.get(["apiKey", "baseUrl", "model"]);
@@ -26,19 +28,6 @@ function safePost(port, msg) {
   } catch (e) {}
 }
 
-// 面板里的「打开设置」按钮，以及点工具栏图标，都进设置页
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg && msg.type === "open_options") {
-    chrome.runtime.openOptionsPage();
-    sendResponse({ ok: true });
-  }
-  return false;
-});
-
-chrome.action.onClicked.addListener(() => {
-  chrome.runtime.openOptionsPage();
-});
-
 // 把 HTTP 状态码翻成用户能行动的话，别只甩一个数字
 function httpErrorText(status, detail) {
   const tail = detail ? "（" + detail + "）" : "";
@@ -58,19 +47,118 @@ function netErrorText(e) {
   return "网络错误：" + m;
 }
 
+async function readErrorBody(res) {
+  try {
+    const txt = await res.text();
+    try {
+      const j = JSON.parse(txt);
+      return (j && j.error && j.error.message) || (j && j.message) || txt.slice(0, 200);
+    } catch (e) {
+      return txt.slice(0, 200);
+    }
+  } catch (e) {
+    return "";
+  }
+}
+
+// 逐行解析 SSE。跨 chunk 的半行由 buf 兜住；[DONE] 与流内的 error 都会提前收尾。
+function createSseReader(onDelta) {
+  let buf = "";
+  let stopped = false;
+  let errorText = null;
+
+  function consumeLine(raw) {
+    const t = raw.trim();
+    if (!t || t.startsWith(":")) return; // 空行 / 心跳注释
+    if (!t.startsWith("data:")) return; // event: / id: 之类的非内容行
+    const payload = t.slice(5).trim();
+    if (!payload) return;
+    if (payload === "[DONE]") {
+      stopped = true;
+      return;
+    }
+    let j;
+    try {
+      j = JSON.parse(payload);
+    } catch (e) {
+      return;
+    }
+    if (j && j.error) {
+      stopped = true;
+      errorText = j.error.message || "接口返回错误";
+      return;
+    }
+    const c = j && j.choices && j.choices[0];
+    // delta 是标准流式格式；text / message.content 兼容那些整包返回的兼容服务
+    const piece = (c && c.delta && c.delta.content) || (c && c.text) || (c && c.message && c.message.content);
+    if (piece) onDelta(piece);
+  }
+
+  return {
+    feed(chunk, isFinal) {
+      buf += chunk;
+      const lines = buf.split("\n");
+      buf = isFinal ? "" : lines.pop();
+      for (const raw of lines) {
+        consumeLine(raw);
+        if (stopped) return;
+      }
+    },
+    get stopped() {
+      return stopped;
+    },
+    get error() {
+      return errorText;
+    }
+  };
+}
+
+// 面板里的「打开设置」按钮，以及点工具栏图标，都进设置页
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === "open_options") {
+    chrome.runtime.openOptionsPage();
+    sendResponse({ ok: true });
+  }
+  return false;
+});
+
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "explain") return;
 
   let aborter = null;
+  let stalled = false;
+  let idleTimer = null;
+
+  function stopIdle() {
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
+  function bumpIdle() {
+    stopIdle();
+    idleTimer = setTimeout(() => {
+      stalled = true;
+      if (aborter) aborter.abort();
+    }, STALL_MS);
+  }
+
   // 用户关掉面板 = 不再需要这次回答，立即中止请求，别继续烧 token
   port.onDisconnect.addListener(() => {
+    stopIdle();
     if (aborter) aborter.abort();
   });
 
   port.onMessage.addListener(async (msg) => {
     if (msg.type !== "explain") return;
     if (aborter) aborter.abort();
+    stopIdle();
     aborter = new AbortController();
+    stalled = false;
 
     const { apiKey, baseUrl, model } = await getConfig();
     if (!apiKey) {
@@ -83,58 +171,122 @@ chrome.runtime.onConnect.addListener((port) => {
       return;
     }
 
-    try {
-      const res = await fetch(endpoint(baseUrl), {
+    const post = (body) =>
+      fetch(endpoint(baseUrl), {
         method: "POST",
         signal: aborter.signal,
         headers: {
           "content-type": "application/json",
           authorization: "Bearer " + apiKey
         },
-        body: JSON.stringify({
-          model,
-          stream: true,
-          max_tokens: msg.max_tokens || 800,
-          messages: [
-            { role: "system", content: msg.system },
-            { role: "user", content: msg.user }
-          ]
-        })
+        body: JSON.stringify(body)
       });
+
+    try {
+      const payload = {
+        model,
+        stream: true,
+        max_tokens: msg.max_tokens || 800,
+        messages: [
+          { role: "system", content: msg.system },
+          { role: "user", content: msg.user }
+        ]
+      };
+
+      bumpIdle();
+      let res = await post(payload);
+
+      // 新一些的模型（o1/gpt-5 系列）只认 max_completion_tokens，被拒时自动换一次
+      if (res.status === 400) {
+        const detail = await readErrorBody(res);
+        if (/max_tokens/i.test(detail)) {
+          const retry = { ...payload, max_completion_tokens: payload.max_tokens };
+          delete retry.max_tokens;
+          res = await post(retry);
+        } else {
+          safePost(port, { type: "error", text: httpErrorText(400, detail) });
+          return;
+        }
+      }
       if (!res.ok) {
-        let detail = "";
+        safePost(port, { type: "error", text: httpErrorText(res.status, await readErrorBody(res)) });
+        return;
+      }
+
+      const contentType = String(res.headers.get("content-type") || "").toLowerCase();
+
+      // 有些「OpenAI 兼容」服务无视 stream:true，直接回一个完整 JSON。
+      // 不处理的话，页面会转完圈圈却一个字都没有。
+      if (!contentType.includes("event-stream")) {
+        const text = await res.text();
+        let filled = false;
         try {
-          detail = (await res.json())?.error?.message || "";
+          const j = JSON.parse(text);
+          if (j && j.error) {
+            safePost(port, { type: "error", text: j.error.message || "接口返回错误" });
+            return;
+          }
+          const c = j && j.choices && j.choices[0];
+          const full = (c && c.message && c.message.content) || (c && c.text);
+          if (full) {
+            safePost(port, { type: "delta", text: full });
+            filled = true;
+          }
         } catch (e) {}
-        safePost(port, { type: "error", text: httpErrorText(res.status, detail) });
+        if (!filled) {
+          // content-type 标错但内容其实是 SSE 的情况也不少，按 SSE 再兜一次
+          const probe = createSseReader((p) => safePost(port, { type: "delta", text: p }));
+          probe.feed(text, true);
+          if (probe.error) {
+            safePost(port, { type: "error", text: probe.error });
+            return;
+          }
+        }
+        safePost(port, { type: "done" });
+        return;
+      }
+
+      if (!res.body) {
+        safePost(port, { type: "error", text: "接口没有返回内容，检查模型名是否正确。" });
         return;
       }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let buf = "";
-      while (true) {
+      const sse = createSseReader((p) => {
+        safePost(port, { type: "delta", text: p });
+        bumpIdle();
+      });
+
+      while (!sse.stopped) {
         const { value, done } = await reader.read();
         if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop();
-        for (const line of lines) {
-          const t = line.trim();
-          if (!t.startsWith("data:")) continue;
-          const payload = t.slice(5).trim();
-          if (!payload || payload === "[DONE]") continue;
-          try {
-            const j = JSON.parse(payload);
-            const piece = j?.choices?.[0]?.delta?.content;
-            if (piece) safePost(port, { type: "delta", text: piece });
-          } catch (e) {}
-        }
+        sse.feed(decoder.decode(value, { stream: true }), false);
+      }
+      if (!sse.stopped) sse.feed(decoder.decode(), true);
+      stopIdle();
+
+      if (sse.stopped) {
+        try {
+          await reader.cancel();
+        } catch (e) {}
+      }
+      if (sse.error) {
+        safePost(port, { type: "error", text: sse.error });
+        return;
       }
       safePost(port, { type: "done" });
     } catch (e) {
-      if (e && e.name === "AbortError") return;
+      stopIdle();
+      if (e && e.name === "AbortError") {
+        if (stalled) {
+          safePost(port, { type: "error", text: "生成中断：45 秒没有收到新内容，可能是网络或服务端卡住。" });
+        }
+        return;
+      }
       safePost(port, { type: "error", text: netErrorText(e) });
+    } finally {
+      stopIdle();
     }
   });
 });
