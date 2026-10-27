@@ -2,26 +2,28 @@
   if (window.__yijieLoaded) return;
   window.__yijieLoaded = true;
 
-  const SYSTEM = `你是一位中文母语的英文阅读助手。用户划出了网页上的一段英文，请用简体中文解释。
-严格遵守：
-1. 第一句直接说明这段在讲什么，不要复述原文，不要开场白。
-2. 先给一句贴切的译文（以「译文：」开头），让用户立刻知道意思。
-3. 出现专业术语时写成「英文术语 = 中文译名」，再用一句大白话解释。
-4. 若是长难句，先一句话说大意，再拆出主干（谁 + 做什么 + 结果）。
-5. 只在有助于理解时给一个不超过两行的例子。
-6. 全文控制在 250 字以内，可用短列表，不要写总结段。`;
-
-  const SYSTEM_FULL = `你是一位中文母语的英文阅读助手。用户划出了网页上的一段英文，请用简体中文详细讲解。
-严格遵守：
-1. 先用一句话说明这段在讲什么，不要复述原文。
-2. 给出完整译文，保留原文的分句结构，便于对照。
-3. 逐个讲解其中的专业术语：「英文术语 = 中文译名」，再解释含义与作用。
-4. 若句子结构复杂，拆出主干并说明修饰成分；点出容易误解的地方。
-5. 给一个不超过三行的实际例子（商业、科技或生活皆可）。
-6. 最后一句说明这段的言外之意或作者意图。
-7. 全文控制在 600 字以内，可用小标题和短列表，不要开场白。`;
+  const D = globalThis.YJ_DEFAULTS || {};
+  let systemPrompt = String(D.systemPrompt || "").trim() || "请用简体中文解释这段英文。";
+  let detailPrompt = String(D.detailPrompt || "").trim() || "请用简体中文详细讲解这段英文。";
 
   let btn = null, panel = null, port = null, currentText = "", currentCtx = "", buffer = "", detailed = false;
+
+  // 设置页改完提示词，已打开的页面无需刷新即可生效
+  function loadPrompts() {
+    chrome.storage.local.get(["systemPrompt", "detailPrompt"], (s) => {
+      const a = String(s.systemPrompt || "").trim();
+      const b = String(s.detailPrompt || "").trim();
+      if (a) systemPrompt = a;
+      if (b) detailPrompt = b;
+    });
+  }
+  loadPrompts();
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local") return;
+      if ("systemPrompt" in changes || "detailPrompt" in changes) loadPrompts();
+    });
+  } catch (e) {}
 
   function esc(s) {
     return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -120,6 +122,47 @@
     return panel;
   }
 
+  // 没填 Key 时不要甩一行红字，告诉用户下一步做什么
+  function renderGuide(answer, status) {
+    buffer = "";
+    answer.textContent = "";
+    const box = document.createElement("div");
+    box.className = "yj-guide";
+
+    const title = document.createElement("p");
+    title.className = "yj-guide-title";
+    title.textContent = "还没有配置 API Key";
+
+    const p1 = document.createElement("p");
+    p1.textContent = "译解 用你自己的 Key 调用模型，请求从浏览器直接发往你填的接口，不经过任何第三方服务器。";
+
+    const p2 = document.createElement("p");
+    p2.textContent = "推荐 DeepSeek（platform.deepseek.com 申请，几块钱能用很久）；也支持 OpenAI 和本地 Ollama。";
+
+    const row = document.createElement("div");
+    row.className = "yj-guide-row";
+
+    const open = document.createElement("button");
+    open.textContent = "打开设置";
+    open.addEventListener("click", () => {
+      try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
+    });
+
+    const retry = document.createElement("button");
+    retry.textContent = "重试";
+    retry.className = "yj-ghost";
+    retry.addEventListener("click", () => { if (currentText) explain(currentText, currentCtx); });
+
+    row.appendChild(open);
+    row.appendChild(retry);
+    box.appendChild(title);
+    box.appendChild(p1);
+    box.appendChild(p2);
+    box.appendChild(row);
+    answer.appendChild(box);
+    status.textContent = "未配置";
+  }
+
   function explain(text, context) {
     const p = ensurePanel();
     p.style.display = "flex";
@@ -151,7 +194,11 @@
       } else if (msg.type === "done") {
         clearTimeout(watchdog);
         status.textContent = "完成 · " + buffer.length + " 字";
+      } else if (msg.type === "need_key") {
+        clearTimeout(watchdog);
+        renderGuide(answer, status);
       } else if (msg.type === "error") {
+        clearTimeout(watchdog);
         answer.innerHTML = '<span class="yj-err">⚠️ ' + esc(msg.text) + "</span>";
         status.textContent = "出错";
       }
@@ -160,7 +207,12 @@
       ? '选中的片段：\n"""\n' + text + '\n"""\n\n它所在的段落（供理解上下文，不必逐句解释）：\n"""\n' + context + '\n"""\n\n请重点解释选中的片段。'
       : '网页原文：\n"""\n' + text + '\n"""\n请解释。';
     currentCtx = context || "";
-    port.postMessage({ type: "explain", system: detailed ? SYSTEM_FULL : SYSTEM, user: userMsg, max_tokens: detailed ? 1800 : 700 });
+    port.postMessage({
+      type: "explain",
+      system: detailed ? detailPrompt : systemPrompt,
+      user: userMsg,
+      max_tokens: detailed ? 1800 : 700
+    });
   }
 
   document.addEventListener("mouseup", (e) => {

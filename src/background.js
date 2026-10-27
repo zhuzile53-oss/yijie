@@ -26,6 +26,19 @@ function safePost(port, msg) {
   } catch (e) {}
 }
 
+// 面板里的「打开设置」按钮，以及点工具栏图标，都进设置页
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === "open_options") {
+    chrome.runtime.openOptionsPage();
+    sendResponse({ ok: true });
+  }
+  return false;
+});
+
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage();
+});
+
 chrome.runtime.onConnect.addListener((port) => {
   if (port.name !== "explain") return;
 
@@ -42,7 +55,8 @@ chrome.runtime.onConnect.addListener((port) => {
 
     const { apiKey, baseUrl, model } = await getConfig();
     if (!apiKey) {
-      safePost(port, { type: "error", text: "还没有填写 API Key：右键扩展图标 → 选项。" });
+      // 页面收到后会渲染引导卡片，而不是甩一行红字
+      safePost(port, { type: "need_key" });
       return;
     }
 

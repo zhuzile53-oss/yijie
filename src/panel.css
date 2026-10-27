@@ -32,6 +32,17 @@
 .yj-dim { color: #999; }
 .yj-err { color: #c62828; }
 
+/* 未配置 Key 的引导卡片 */
+.yj-guide { font-size: 13px; line-height: 1.7; }
+.yj-guide p { margin: 0 0 10px; color: #444; }
+.yj-guide .yj-guide-title { font-weight: 600; color: #1f3864; font-size: 14px; margin-bottom: 8px; }
+.yj-guide-row { display: flex; gap: 8px; margin-top: 14px; }
+.yj-guide-row button {
+  padding: 6px 14px; border-radius: 8px; border: none;
+  background: #1f3864; color: #fff; font-size: 13px; cursor: pointer;
+}
+.yj-guide-row button.yj-ghost { background: #eee; color: #333; }
+
 @media (prefers-color-scheme: dark) {
   .yj-panel { background: #1e1e1e; color: #e8e8e8; border-color: rgba(255,255,255,.1); }
   .yj-head { border-bottom-color: #333; }
