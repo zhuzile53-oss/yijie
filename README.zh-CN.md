@@ -8,6 +8,10 @@
 一个给「跨语言阅读」用的 Chrome / Edge 扩展（Manifest V3）。
 它不只是翻译：先给译文，再讲术语、拆句子、说清言外之意。
 
+![在英文网页上选中一句，右侧流式输出中文讲解](docs/screenshots/demo.gif)
+
+<sub>演示用文本；面板样式来自项目里的 `panel.css`。</sub>
+
 | 英文页面 → 中文讲解 | 中文页面 → 英文讲解 |
 |---|---|
 | ![英文页面，右侧中文讲解面板](docs/screenshots/panel-en.png) | ![中文页面，右侧英文讲解面板](docs/screenshots/panel-zh.png) |
