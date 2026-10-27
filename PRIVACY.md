@@ -29,6 +29,8 @@ author — there is no server to send it to.
 1. 你选中的那段文字
 2. 它所在的段落（最多 600 字），用于消解代词和上下文
 3. 提示词（system prompt）
+4. 你的 API Key —— 作为 `Authorization` 请求头发给**同一个**接口。这是调用大模型必需的，
+   它只出现在发往你自己配置的地址的请求里，不发给任何其他人，也不会写进日志。
 
 请求发往哪里，完全由你填的 `baseUrl` 决定（DeepSeek、OpenAI、你自建的中转、
 本地 Ollama 等）。该服务商如何处理这些文字，取决于**它自己的隐私政策**，
@@ -53,6 +55,7 @@ author — there is no server to send it to.
 
 All settings live in `chrome.storage.local` on your machine. When you click
 Explain, your browser sends the selected text, its surrounding paragraph (up to
-600 characters) and the system prompt **directly** to the endpoint you
-configured. No telemetry, no accounts, no device identifiers, no other network
-requests. Uninstalling removes everything.
+600 characters), the system prompt and your own API key (as an `Authorization`
+header) **directly** to the endpoint you configured — and nowhere else. No
+telemetry, no accounts, no device identifiers, no other network requests.
+Uninstalling removes everything.
