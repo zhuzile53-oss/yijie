@@ -98,6 +98,7 @@
         <span class="yj-actions">
           <button class="yj-mode" title="切换简明/详解">详解</button>
           <button class="yj-copy" title="复制解释">复制</button>
+          <button class="yj-settings" title="设置">⚙</button>
           <button class="yj-close" title="关闭">×</button>
         </span>
       </div>
@@ -117,6 +118,9 @@
     panel.querySelector(".yj-copy").addEventListener("click", () => {
       navigator.clipboard.writeText(buffer).catch(() => {});
       panel.querySelector(".yj-status").textContent = "已复制";
+    });
+    panel.querySelector(".yj-settings").addEventListener("click", () => {
+      try { chrome.runtime.sendMessage({ type: "open_options" }); } catch (e) {}
     });
     document.documentElement.appendChild(panel);
     return panel;
