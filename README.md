@@ -9,9 +9,13 @@ A Chrome / Edge extension (Manifest V3) for people who read across languages.
 It is a reading assistant, not just a translator: you get a translation first,
 then terms, sentence structure and the intent behind the passage.
 
-| English page → Chinese | Chinese page → English |
-|---|---|
-| ![Selecting a sentence and getting a streamed Chinese explanation](docs/screenshots/demo-en-zh.gif) | ![Selecting a Chinese sentence and getting a streamed English explanation](docs/screenshots/demo-zh-en.gif) |
+**Select English → get Chinese**
+
+![Selecting an English sentence and getting a streamed Chinese explanation](docs/screenshots/demo-en-zh.gif)
+
+**Select Chinese → get English**
+
+![Selecting a Chinese sentence and getting a streamed English explanation](docs/screenshots/demo-zh-en.gif)
 
 <sub>Demo content. Both panels are rendered from the shipped `panel.css`.</sub>
 
