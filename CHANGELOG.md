@@ -3,7 +3,8 @@
 ## 0.2.0 — 2026-10-27
 
 First public shape of the open-source version. Forked from a single-site
-classroom build and generalised.
+classroom build and generalised. Published to the Chrome Web Store on
+2026-10-29.
 
 **Core**
 

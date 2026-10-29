@@ -5,6 +5,8 @@
 > 在任意网页选中英文，右侧弹出中文讲解；选中中文，弹出英文讲解。
 > 自带 API Key，没有后端。
 
+**[从 Chrome 应用商店安装](https://chromewebstore.google.com/detail/beaolkfpkladmcpjddhjdhldbkkijofm)** · [English](README.md)
+
 一个给「跨语言阅读」用的 Chrome / Edge 扩展（Manifest V3）。
 它不只是翻译：先给译文，再讲术语、拆句子、说清言外之意。
 
@@ -30,14 +32,18 @@
 - **深色模式** — 跟随系统
 - **无后端、无账号、无遥测**
 
-## 安装（暂为解压加载）
+## 安装
+
+**[添加到 Chrome](https://chromewebstore.google.com/detail/beaolkfpkladmcpjddhjdhldbkkijofm)** —— 一键安装，自动更新。
+
+Edge 用户用同一个链接即可：Edge 会先问一次是否允许来自其他商店的扩展，允许后正常安装。Edge 应用商店版本在计划中。
+
+**手动安装**（想跑本仓库的代码，或参与开发）：
 
 1. 下载或克隆本仓库
 2. 打开 `chrome://extensions`（Edge 是 `edge://extensions`），打开右上角 **开发者模式**
 3. 点 **加载已解压的扩展程序**，选择**含 `manifest.json` 的那个文件夹**
 4. 点工具栏图标 → 填 API Key → **保存**
-
-> 应用商店上架中。在那之前只能这样安装。
 
 ## 配置
 

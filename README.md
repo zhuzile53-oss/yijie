@@ -5,6 +5,8 @@
 > Select English on any page → a Chinese explanation appears in a side panel.
 > Select Chinese → you get an English one. Bring your own API key, no backend.
 
+**[Install from the Chrome Web Store](https://chromewebstore.google.com/detail/beaolkfpkladmcpjddhjdhldbkkijofm)** · [简体中文](README.zh-CN.md)
+
 A Chrome / Edge extension (Manifest V3) for people who read across languages.
 It is a reading assistant, not just a translator: you get a translation first,
 then terms, sentence structure and the intent behind the passage.
@@ -35,7 +37,16 @@ then terms, sentence structure and the intent behind the passage.
 - **Dark mode** — follows the system setting.
 - **No backend, no account, no telemetry.**
 
-## Install (unpacked, for now)
+## Install
+
+**[Add to Chrome](https://chromewebstore.google.com/detail/beaolkfpkladmcpjddhjdhldbkkijofm)** — one click, updates automatically.
+
+Edge users can install from the same link: Edge asks once to allow extensions
+from other stores, after which the listing works normally. An Edge Add-ons
+listing is planned.
+
+**Manual install** (if you want to run the code in this repo, or you're
+developing):
 
 1. Download or clone this repo.
 2. Open `chrome://extensions` (or `edge://extensions`) and turn on
@@ -43,9 +54,6 @@ then terms, sentence structure and the intent behind the passage.
 3. Click **Load unpacked** and pick the repo folder — the one containing
    `manifest.json`.
 4. Click the toolbar icon → paste your API key → **Save**.
-
-> Chrome Web Store listing is planned. Until then, loading unpacked is the
-> only way to install.
 
 ## Configure
 
